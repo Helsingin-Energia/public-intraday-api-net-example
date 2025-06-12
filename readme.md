@@ -6,6 +6,8 @@ This sample application uses .NET data objects published in [.NET API library](h
 
 There is also sample Java application available at [https://github.com/NordPool/public-intraday-api](https://github.com/NordPool/public-intraday-api). 
 
+## OBS! ##
+This is mainly clean fork. Only thing that has been changed is the reference to NPS.ID.PublicApi.Models as it is hosted in a nuget repository which is not publicly available.
 ## Disclaimer ##
 
 We offer the client code examples to aid the development against Nord Pool's API at no warranty whatsoever. Clients are solely responsible for separately testing and ensuring that interaction with Nord Pool works according to their own standards.
