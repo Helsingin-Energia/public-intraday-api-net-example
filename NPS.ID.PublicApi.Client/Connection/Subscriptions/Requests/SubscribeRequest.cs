@@ -77,4 +77,8 @@ public class SubscribeRequest
         var additionalAreasPart = additionalDeliveryAreas.Any() ? $"/{string.Join("-", additionalDeliveryAreas)}" : string.Empty;
         return new SubscribeRequest(subscriptionId, "atcCapacities", DestinationHelper.ComposeDestination(user, version, mode, $"atcCapacities/{deliveryAreaId}{additionalAreasPart}"));
     }
+    public static SubscribeRequest HeartBeatPings(string subscriptionId, string user, string version)
+    {
+        return new SubscribeRequest(subscriptionId, "heart_beat_ping", DestinationHelper.ComposeDestination(user, version, "heartbeatping"));
+    }
 }

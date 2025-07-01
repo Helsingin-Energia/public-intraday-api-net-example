@@ -85,6 +85,13 @@ public class SubscribeRequestBuilder
         return SubscribeRequest.AtcCapacities(GetSubId(), _user, _version, publishingMode, deliveryAreaId, additionalDeliveryAreas);
     }
 
+    public SubscribeRequest CreateHeartBeatPings(WebSocketClientTarget clientTarget)
+    {
+        // Create a static subscription ID based on the client target
+        string subscriptionId = $"{clientTarget}-heartbeatping";
+        return SubscribeRequest.HeartBeatPings(subscriptionId, _user, _version);
+    }
+
     private static string GetSubId()
     {
         return $"sub-{Interlocked.Increment(ref _subCounter)}";
