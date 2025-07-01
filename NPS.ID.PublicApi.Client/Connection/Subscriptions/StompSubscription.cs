@@ -36,6 +36,7 @@ public class StompSubscription<TValue> : Subscription, ISubscription<TValue>
     {
         _logger = logger;
         _channel = channel;
+        SequenceNumber = 0;
     }
 
     public override void OnMessage(StompFrame frame, DateTimeOffset timestamp)

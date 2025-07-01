@@ -102,14 +102,25 @@ public class StompClient : IClient
                 stompFrame.GetPublishingMode(),
                 stompFrame.GetSequenceNumber());
 
-            if (_subscriptions.TryGetValue(subscriptionId, out var targetSubscription))
-            {
-                targetSubscription.OnMessage(stompFrame, e.Timestamp);
-            }
-            else
+            if (!_subscriptions.TryGetValue(subscriptionId, out var targetSubscription))
             {
                 _logger.LogWarning("[{clientTarget}][Frame({SubscriptionId})] Received message for subscription that is not assigned to current client", ClientTarget, subscriptionId);
+                return Task.CompletedTask;
             }
+
+            if (targetSubscription.SequenceNumber != 0 && targetSubscription.SequenceNumber + 1 != stompFrame.GetSequenceNumber())
+            {
+                _logger.LogError("[{clientTarget}][Frame({SubscriptionId})] Sequence number mismatch! Expected: {Expected}, Received: {Received}",
+                    ClientTarget,
+                    subscriptionId,
+                    targetSubscription.SequenceNumber + 1,
+                    stompFrame.GetSequenceNumber());
+
+                throw new InvalidOperationException("Sequence number mismatch!");
+            }
+            
+            targetSubscription.SequenceNumber = stompFrame.GetSequenceNumber();
+            targetSubscription.OnMessage(stompFrame, e.Timestamp);
         }
         else
         {

@@ -19,10 +19,10 @@ public static class StompFrameExtensions
         return destination;
     }
     
-    public static string GetSequenceNumber(this StompFrame frame)
+    public static long GetSequenceNumber(this StompFrame frame)
     {
         _ = frame.Properties.TryGetValue(Headers.Server.SequenceNumber, out var sequenceNumber);
-        return sequenceNumber;
+        return long.TryParse(sequenceNumber, out var sequenceNumberLong) ? sequenceNumberLong : 0;
     }
     
     public static PublishingMode GetPublishingMode(this StompFrame frame)
