@@ -33,6 +33,10 @@ public class StompClient : IClient
     private readonly Dictionary<string, Subscription> _subscriptions = new();
     public WebSocketClientTarget ClientTarget { get; }
     public string ClientId { get; }
+    
+    public event EventHandler ConnectionEstablished;
+    public event EventHandler ConnectionClosed;
+    public event EventHandler StompError;
 
     public StompClient(
         ILogger<StompClient> logger,
@@ -55,6 +59,7 @@ public class StompClient : IClient
     {
         _connectionEstablished = true;
         _connectionEstablishedEvent.Set();
+        ConnectionEstablished?.Invoke(this, EventArgs.Empty);
         _logger.LogInformation("[{clientTarget}] Connection established for client {ClientId}", ClientTarget, ClientId);
         
         return Task.CompletedTask;
@@ -63,7 +68,7 @@ public class StompClient : IClient
     private Task OnConnectionClosedAsync()
     {
         _connectionClosedEvent.Set();
-
+        ConnectionClosed?.Invoke(this, EventArgs.Empty);
         if (_connectionClosed)
         {
             _logger.LogInformation("[{clientTarget}] Connection closing for client {ClientId}", ClientTarget, ClientId);
@@ -116,7 +121,7 @@ public class StompClient : IClient
                     targetSubscription.SequenceNumber + 1,
                     stompFrame.GetSequenceNumber());
 
-                throw new InvalidOperationException("Sequence number mismatch!");
+                StompError?.Invoke(this, EventArgs.Empty);
             }
             
             targetSubscription.SequenceNumber = stompFrame.GetSequenceNumber();
@@ -138,12 +143,17 @@ public class StompClient : IClient
     private Task OnStompErrorAsync(StompConnectionException exception)
     {
         _logger.LogError(exception, "[{clientTarget}] An error on web socket message processing", ClientTarget);
-
+        StompError?.Invoke(this, EventArgs.Empty);
         return Task.CompletedTask;
     }
     
     public async Task<bool> OpenAsync(CancellationToken cancellationToken)
     {
+        if (_webSocketConnector.IsConnected)
+        {
+            return true;
+        }
+
         await _webSocketConnector.ConnectAsync(cancellationToken);
 
         await _connectionEstablishedEvent.WaitAsync(cancellationToken);

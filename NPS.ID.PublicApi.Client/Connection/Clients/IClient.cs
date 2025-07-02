@@ -6,6 +6,10 @@ namespace NPS.ID.PublicApi.Client.Connection.Clients;
 
 public interface IClient
 {
+    event EventHandler ConnectionEstablished;
+    event EventHandler ConnectionClosed;
+    event EventHandler StompError;
+
     WebSocketClientTarget ClientTarget { get; }
     
     Task<bool> OpenAsync(CancellationToken cancellationToken);
