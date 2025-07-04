@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Extend;
 using Microsoft.Extensions.Logging;
@@ -18,14 +19,14 @@ using NPS.ID.PublicApi.Client.Security.Options;
 
 namespace NPS.ID.PublicApi.Client;
 
-public class ApplicationWorker
+public class ApplicationWorker : IDisposable
 {
     private readonly ILogger<ApplicationWorker> _logger;
 
     private const string Version = "v1";
-    private const int DemoArea = 3; // 3 = Finland
+    private const int DemoArea = 3;
     private static readonly IEnumerable<int> AdditionalAreas = [5, 6, 7, 10, 15];
-    
+
     private readonly string _clientId = $"{Guid.NewGuid()}-dotnet-demo-client";
 
     private readonly StompClientFactory _clientFactory;
@@ -53,6 +54,7 @@ public class ApplicationWorker
         };
     }
 
+    [SuppressMessage("Design", "MA0051:Method is too long", Justification = "This is a demo application, not a production code.")]
     public async Task RunAsync()
     {
         var marketDataClient = await
@@ -68,18 +70,18 @@ public class ApplicationWorker
                 var tradingClientDisconnectionTask = tradingClient.DisconnectAsync(CancellationToken.None);
                 Task.WaitAll(marketDataClientDisconnectionTask, tradingClientDisconnectionTask);
             });
-        
+
         // Delivery areas
         await SubscribeDeliveryAreasAsync(marketDataClient, _cancellationTokenSource.Token);
 
         // Configurations 
         await SubscribeConfigurationsAsync(tradingClient, _cancellationTokenSource.Token);
-        
+
         // Order execution report
         await SubscribeOrderExecutionReportAsync(tradingClient,
             PublishingMode.STREAMING,
             _cancellationTokenSource.Token);
-        
+
         // Contracts
         await SubscribeContractsAsync(marketDataClient, PublishingMode.CONFLATED,
             _cancellationTokenSource.Token);
@@ -87,51 +89,48 @@ public class ApplicationWorker
         // Local views 
         await SubscribeLocalViewsAsync(marketDataClient, PublishingMode.STREAMING,
             _cancellationTokenSource.Token);
-        
+
         // Private trades
         await SubscribePrivateTradesAsync(tradingClient, PublishingMode.STREAMING,
             _cancellationTokenSource.Token);
-        
+
         // Tickers 
         await SubscribeTickersAsync(marketDataClient, PublishingMode.CONFLATED,
             _cancellationTokenSource.Token);
-        
+
         // MyTickers 
         await SubscribeMyTickersAsync(marketDataClient, PublishingMode.CONFLATED,
             _cancellationTokenSource.Token);
-        
+
         // Public statistics 
         await SubscribePublicStatisticsAsync(marketDataClient, PublishingMode.CONFLATED,
             _cancellationTokenSource.Token);
-        
+
         // Throttling limits
         await SubscribeThrottlingLimitsAsync(tradingClient,
             PublishingMode.CONFLATED,
             _cancellationTokenSource.Token);
-        
+
         // Capacities 
         await SubscribeCapacitiesAsync(marketDataClient, PublishingMode.CONFLATED,
             _cancellationTokenSource.Token);
         // AtcCapacities 
         await SubscribeAtcCapacitiesAsync(marketDataClient, PublishingMode.CONFLATED,
             _cancellationTokenSource.Token);
-
-        // Order 
-        // We wait some time in hope to get some example contracts and configurations that are needed for preparing example order request
-        Thread.Sleep(5000);
-        await SendOrderEntryRequestAsync(tradingClient, 
+        await Task.Delay(TimeSpan.FromSeconds(5), _cancellationTokenSource.Token);
+        await SendOrderEntryRequestAsync(tradingClient,
             _cancellationTokenSource.Token);
         // Wait before order modification
-        Thread.Sleep(5000);
+        await Task.Delay(TimeSpan.FromSeconds(5), _cancellationTokenSource.Token);
         await SendOrderModificationRequestAsync(tradingClient,
             _cancellationTokenSource.Token);
-        
+
          // Wait before invalid order request
-         Thread.Sleep(5000);
+         await Task.Delay(TimeSpan.FromSeconds(5), _cancellationTokenSource.Token);
          await SendInvalidOrderEntryRequestAsync(tradingClient,
              _cancellationTokenSource.Token);
          // Wait before invalid order modification request
-         Thread.Sleep(5000);
+         await Task.Delay(TimeSpan.FromSeconds(5), _cancellationTokenSource.Token);
          await SendInvalidOrderModificationRequestAsync(tradingClient,
              _cancellationTokenSource.Token);
 
@@ -218,7 +217,7 @@ public class ApplicationWorker
         var subscription =
             await client.SubscribeAsync<ThrottlingLimitMessage>(throttlingLimitsSubscription, cancellationToken);
         ReadSubscriptionChannel(client.ClientTarget, subscription, cancellationToken);
-        
+
         // Set automatic unsubscription of throttling limit topic after 10s
         _ = Task.Run(async () =>
         {
@@ -234,7 +233,7 @@ public class ApplicationWorker
         var subscription = await client.SubscribeAsync<CapacityRow>(contractsSubscription, cancellationToken);
         ReadSubscriptionChannel(client.ClientTarget, subscription, cancellationToken);
     }
-    
+
     private async Task SubscribeAtcCapacitiesAsync(IClient client, PublishingMode publishingMode,
         CancellationToken cancellationToken)
     {
@@ -279,7 +278,7 @@ public class ApplicationWorker
         // Store created order in simple cache storage for order modification request
         _memoryCacheProxy.SetCache([orderRequest]);
 
-        _logger.LogInformation("[{clientTarget}] Attempting to send correct order request.", client.ClientTarget);
+        _logger.LogInformation("[{ClientTarget}] Attempting to send correct order request.", client.ClientTarget);
         await client.SendAsync(orderRequest, DestinationHelper.ComposeDestination(Version,"orderEntryRequest"), cancellationToken);
     }
 
@@ -290,7 +289,7 @@ public class ApplicationWorker
             .LastOrDefault();
         if (lastOrder is null)
         {
-            _logger.LogInformation("[{clientTarget}] No valid order to be used for order modification has been found!",
+            _logger.LogInformation("[{ClientTarget}] No valid order to be used for order modification has been found!",
                 client.ClientTarget);
             return;
         }
@@ -298,10 +297,10 @@ public class ApplicationWorker
 
         // Get last order execution report response for above order request (OrderId required for order modification request)
         var lastOrderExecutionReport = _memoryCacheProxy.GetFromCache<OrderExecutionReport>()
-            .LastOrDefault(oer => oer.Orders.Count == 1 && oer.Orders.Single().ClientOrderId == lastOrder.Orders.Single().ClientOrderId);
-        if (lastOrderExecutionReport is null || lastOrderExecutionReport.Orders.IsNullOrEmpty())
+            .LastOrDefault(oer => oer.Orders.Count == 1 && string.Equals(oer.Orders.Single().ClientOrderId, lastOrder.Orders.Single().ClientOrderId, StringComparison.Ordinal));
+        if (lastOrderExecutionReport?.Orders.IsNullOrEmpty() != false)
         {
-            _logger.LogInformation("[{clientTarget}] No valid order execution report to be used for order modification has been found!",
+            _logger.LogInformation("[{ClientTarget}] No valid order execution report to be used for order modification has been found!",
                 client.ClientTarget);
             return;
         }
@@ -334,7 +333,7 @@ public class ApplicationWorker
             ]
         };
 
-        _logger.LogInformation("[{clientTarget}] Attempting to send an correct order modification request.",
+        _logger.LogInformation("[{ClientTarget}] Attempting to send an correct order modification request.",
             client.ClientTarget);
         await client.SendAsync(orderModificationRequest, DestinationHelper.ComposeDestination(Version,"orderModificationRequest"), cancellationToken);
     }
@@ -347,7 +346,7 @@ public class ApplicationWorker
         {
             return;
         }
-        
+
         // Invalid order request - missing order details, detailed error will be logged as a part of order execution report response
         var invalidOrderRequest = new OrderEntryRequest
         {
@@ -363,7 +362,7 @@ public class ApplicationWorker
             ]
         };
 
-        _logger.LogInformation("[{clientTarget}] Attempting to send incorrect order request.", client.ClientTarget);
+        _logger.LogInformation("[{ClientTarget}] Attempting to send incorrect order request.", client.ClientTarget);
         await client.SendAsync(invalidOrderRequest, DestinationHelper.ComposeDestination(Version,"orderEntryRequest"), cancellationToken);
     }
 
@@ -383,7 +382,7 @@ public class ApplicationWorker
             ]
         };
 
-        _logger.LogInformation("[{clientTarget}] Attempting to send an incorrect order modification request.",
+        _logger.LogInformation("[{ClientTarget}] Attempting to send an incorrect order modification request.",
             client.ClientTarget);
         await client.SendAsync(invalidOrderModificationRequest, DestinationHelper.ComposeDestination(Version,"orderModificationRequest"), cancellationToken);
     }
@@ -392,12 +391,12 @@ public class ApplicationWorker
     {
         var exampleContracts = _memoryCacheProxy
             .GetFromCache<ContractRow>()
-            .Where(c => c.ProductType != ProductType.CUSTOM_BLOCK && c.DlvryAreaState.Any(s => s.State == ContractState.ACTI))
+            .Where(c => c.ProductType != ProductType.CUSTOM_BLOCK && c.DlvryAreaState.Exists(s => s.State == ContractState.ACTI))
             .ToList();
         if (exampleContracts.IsNullOrEmpty())
         {
             _logger.LogWarning(
-                "[{clientTarget}] No valid contract to be used for order creation has been found in cache!",
+                "[{ClientTarget}] No valid contract to be used for order creation has been found in cache!",
                 client.ClientTarget);
             return default;
         }
@@ -408,18 +407,18 @@ public class ApplicationWorker
         var exampleAreas = exampleRandomContract!
             .DlvryAreaState
             .Where(s => s.State == ContractState.ACTI);
-        
+
         var examplePortfolios = _memoryCacheProxy.GetFromCache<ConfigurationRow>()
             .SelectMany(c => c.Portfolios)
-            .Where(p => p.Areas.Any(a => exampleAreas.Any(s => s.DlvryAreaId == a.AreaId)))
+            .Where(p => p.Areas.Exists(a => exampleAreas.Any(s => s.DlvryAreaId == a.AreaId)))
             .ToList();
-        
+
         var exampleRandomPortfolioForContract = examplePortfolios
             .ElementAtOrDefault(Random.Shared.Next(0, examplePortfolios.Count));
         if (exampleRandomPortfolioForContract is null)
         {
             _logger.LogWarning(
-                "[{clientTarget}] No valid portfolio to be used for order creation has been found in cache!.",
+                "[{ClientTarget}] No valid portfolio to be used for order creation has been found in cache!.",
                 client.ClientTarget);
             return default;
         }
@@ -429,7 +428,7 @@ public class ApplicationWorker
 
         return (exampleRandomContract.ContractId, exampleRandomPortfolioForContract.Id, deliveryAreaPortfolio.AreaId);
     }
-    
+
     private void ReadSubscriptionChannel<TValue>(WebSocketClientTarget clientTarget,
         ISubscription<TValue> subscription, CancellationToken cancellationToken)
     {
@@ -452,9 +451,14 @@ public class ApplicationWorker
                     : responseString;
 
                 _logger.LogInformation(
-                    "[{clientTarget}][Frame({SubscriptionId}):Response] {ResponseString}", clientTarget,
+                    "[{ClientTarget}][Frame({SubscriptionId}):Response] {ResponseString}", clientTarget,
                     subscription.Id, responseString);
             }
         }, cancellationToken);
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
     }
 }

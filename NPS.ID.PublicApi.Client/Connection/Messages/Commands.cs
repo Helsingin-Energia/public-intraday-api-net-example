@@ -17,6 +17,6 @@ public static class Commands
         public const string Connected = "CONNECTED";
         public const string Message = "MESSAGE";
         public const string Error = "ERROR";
-        public const string Receipt = "RECEIPT"; 
+        public const string Receipt = "RECEIPT";
     }
 }

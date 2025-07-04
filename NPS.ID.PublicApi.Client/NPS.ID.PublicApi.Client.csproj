@@ -32,6 +32,10 @@
       </None>
     </ItemGroup>
 
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);RCS*</NoWarn>
+    </PropertyGroup>
+
     <ItemGroup>
       <ProjectReference Include="..\..\public-intraday-net-api\NPS.ID.PublicApi.Models\NPS.ID.PublicApi.Models.csproj" />
     </ItemGroup>

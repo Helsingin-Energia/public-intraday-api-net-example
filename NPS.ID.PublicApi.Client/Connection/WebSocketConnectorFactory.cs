@@ -21,21 +21,21 @@ public class WebSocketConnectorFactory
     }
 
     public WebSocketConnector Create(
-        WebSocketOptions webSocketOptions, 
-        CredentialsOptions credentialsOptions, 
+        WebSocketOptions webSocketOptions,
+        CredentialsOptions credentialsOptions,
         Func<MessageReceivedEventArgs, CancellationToken, Task> messageReceivedCallbackAsync,
         Func<Task> connectionEstablishedCallbackAsync = null,
         Func<Task> connectionClosedCallbackAsync = null,
         Func<StompConnectionException, Task> stompErrorCallbackAsync = null)
     {
         return new WebSocketConnector(
-            _loggerFactory.CreateLogger<WebSocketConnector>(), 
-            _ssoService, 
-            webSocketOptions, 
+            _loggerFactory.CreateLogger<WebSocketConnector>(),
+            _ssoService,
+            webSocketOptions,
             credentialsOptions,
-            messageReceivedCallbackAsync, 
-            connectionEstablishedCallbackAsync, 
-            connectionClosedCallbackAsync, 
+            messageReceivedCallbackAsync,
+            connectionEstablishedCallbackAsync,
+            connectionClosedCallbackAsync,
             stompErrorCallbackAsync);
     }
 }

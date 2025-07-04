@@ -21,7 +21,7 @@ public static class SsoClientServiceCollectionExtensions
 
         return services;
     }
-    
+
     public static IServiceCollection AddCredentialsOptions(this IServiceCollection services)
     {
         services.AddOptions<CredentialsOptions>()
@@ -31,7 +31,7 @@ public static class SsoClientServiceCollectionExtensions
 
         return services;
     }
-    
+
     public static IServiceCollection AddSsoClientOptions(this IServiceCollection services)
     {
         services.AddOptions<SsoOptions>()
@@ -46,7 +46,7 @@ public static class SsoClientServiceCollectionExtensions
     {
         return  services.AddSingleton<ApplicationWorker>();
     }
-    
+
     public static IServiceCollection AddSsoClient(this IServiceCollection services)
     {
         services.AddTransient<ISsoService, SsoService>();
@@ -62,12 +62,12 @@ public static class SsoClientServiceCollectionExtensions
 
         return services;
     }
-    
+
     public static IServiceCollection AddStompClient(this IServiceCollection services)
     {
         return services.AddTransient<StompClientFactory>();
     }
-    
+
     public static IServiceCollection AddWebSocketConnector(this IServiceCollection services)
     {
         return services.AddTransient<WebSocketConnectorFactory>();

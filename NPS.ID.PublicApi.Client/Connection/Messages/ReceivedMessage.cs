@@ -49,7 +49,7 @@ public sealed class ReceivedMessage : IDisposable
     }
 
     public Stream GetStream() => _messageStream;
-    
+
     public void Dispose()
     {
         _messageStream.Dispose();

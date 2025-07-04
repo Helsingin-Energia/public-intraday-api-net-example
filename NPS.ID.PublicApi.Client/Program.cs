@@ -25,7 +25,7 @@ builder.Services
 builder.Services.AddMemoryCache();
 
 using var host = builder.Build();
-using var scope = host.Services.CreateScope();
+await using var scope = host.Services.CreateAsyncScope();
 
 var services = scope.ServiceProvider;
 

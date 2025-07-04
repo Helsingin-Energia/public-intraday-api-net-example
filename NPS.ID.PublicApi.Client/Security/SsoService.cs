@@ -19,7 +19,7 @@ public class SsoService : ISsoService
         _scope = "global";
     }
 
-    public async Task<string> GetAuthTokenAsync(string userName, string password, CancellationToken cancellationToken)
+    public async Task<string> GetAuthTokenAsync(string userName, string password, CancellationToken cancellationToken = default)
     {
         var payload = ConstructPayloadForTokenRequest(userName, password);
 

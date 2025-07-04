@@ -5,7 +5,7 @@ namespace NPS.ID.PublicApi.Client.Connection.Subscriptions.Requests;
 public class SubscribeRequestBuilder
 {
     private static int _subCounter;
-    
+
     private readonly string _user;
     private readonly string _version;
 
@@ -24,22 +24,22 @@ public class SubscribeRequestBuilder
     {
         return SubscribeRequest.DeliveryAreas(GetSubId(), _user, _version);
     }
-    
+
     public SubscribeRequest CreateConfiguration()
     {
         return SubscribeRequest.Configuration(GetSubId(), _user, _version);
     }
-    
+
     public SubscribeRequest CreateOrderExecutionReport(PublishingMode publishingMode)
     {
         return SubscribeRequest.OrderExecutionReports(GetSubId(), _user, _version, publishingMode);
     }
-    
+
     public SubscribeRequest CreateContracts(PublishingMode publishingMode)
     {
         return SubscribeRequest.Contracts(GetSubId(), _user, _version, publishingMode);
     }
-    
+
     public SubscribeRequest CreateLocalViews(PublishingMode publishingMode, int deliveryAreaId)
     {
         return SubscribeRequest.LocalView(GetSubId(), _user, _version, publishingMode, deliveryAreaId);
@@ -49,7 +49,7 @@ public class SubscribeRequestBuilder
     {
         return SubscribeRequest.PrivateTrades(GetSubId(), _user, _version, publishingMode);
     }
-    
+
     public SubscribeRequest CreateTicker(PublishingMode publishingMode)
     {
         return SubscribeRequest.Ticker(GetSubId(), _user, _version, publishingMode);
@@ -59,7 +59,7 @@ public class SubscribeRequestBuilder
     {
         return SubscribeRequest.MyTicker(GetSubId(), _user, _version, publishingMode);
     }
-    
+
     public SubscribeRequest CreatePublicStatistics(PublishingMode publishingMode, int deliveryAreaId)
     {
         return SubscribeRequest.PublicStatistics(GetSubId(), _user, _version, publishingMode, deliveryAreaId);
@@ -69,7 +69,7 @@ public class SubscribeRequestBuilder
     {
         return SubscribeRequest.ThrottlingLimits(GetSubId(), _user, _version, publishingMode);
     }
-    
+
     public SubscribeRequest CreateCapacities(PublishingMode publishingMode, int deliveryAreaId)
     {
         return CreateCapacities(publishingMode, deliveryAreaId, Array.Empty<int>());
@@ -79,7 +79,7 @@ public class SubscribeRequestBuilder
     {
         return SubscribeRequest.Capacities(GetSubId(), _user, _version, publishingMode, deliveryAreaId, additionalDeliveryAreas);
     }
-    
+
     public SubscribeRequest CreateAtcCapacities(PublishingMode publishingMode, int deliveryAreaId, IEnumerable<int> additionalDeliveryAreas)
     {
         return SubscribeRequest.AtcCapacities(GetSubId(), _user, _version, publishingMode, deliveryAreaId, additionalDeliveryAreas);

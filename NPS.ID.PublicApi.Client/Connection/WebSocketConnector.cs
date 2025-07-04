@@ -18,6 +18,7 @@ namespace NPS.ID.PublicApi.Client.Connection;
 
 public class WebSocketConnector : IAsyncDisposable
 {
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new();
     private const string SecureWebSocketProtocol = "wss";
 
     private bool _isConnected;
@@ -26,14 +27,14 @@ public class WebSocketConnector : IAsyncDisposable
     public string ConnectionUri { get; private set; }
 
     private readonly ILogger<WebSocketConnector> _logger;
-    
+
     private readonly ISsoService _ssoService;
 
     private string _currentAuthToken;
     private readonly ClientWebSocket _webSocket;
     private readonly WebSocketOptions _webSocketOptions;
     private readonly CredentialsOptions _credentialsOptions;
-    
+
     private readonly Func<Task> _connectionEstablishedCallbackAsync;
     private readonly Func<Task> _connectionClosedCallbackAsync;
     private readonly Func<MessageReceivedEventArgs, CancellationToken, Task> _messageReceivedCallbackAsync;
@@ -46,18 +47,20 @@ public class WebSocketConnector : IAsyncDisposable
     public WebSocketConnector(ILogger<WebSocketConnector> logger,
         ISsoService ssoService,
         WebSocketOptions webSocketOptions,
-        CredentialsOptions credentialsOptions, 
+        CredentialsOptions credentialsOptions,
         Func<MessageReceivedEventArgs, CancellationToken, Task> messageReceivedCallbackAsync,
         Func<Task> connectionEstablishedCallbackAsync = null,
         Func<Task> connectionClosedCallbackAsync = null,
         Func<StompConnectionException, Task> stompErrorCallbackAsync = null)
     {
+        _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
         _logger = logger;
         _ssoService = ssoService;
 
         _webSocketOptions = webSocketOptions;
         _credentialsOptions = credentialsOptions;
-        
+
         _webSocket = new ClientWebSocket();
         // NOTE: This is not dangerous option if we use JWT
         if (_webSocketOptions.EnablePermessageDeflate)
@@ -69,7 +72,7 @@ public class WebSocketConnector : IAsyncDisposable
         _connectionEstablishedCallbackAsync = connectionEstablishedCallbackAsync;
         _connectionClosedCallbackAsync = connectionClosedCallbackAsync;
         _stompErrorCallbackAsync = stompErrorCallbackAsync;
-        
+
         _serverId = ConstructServerId();
     }
 
@@ -77,33 +80,33 @@ public class WebSocketConnector : IAsyncDisposable
     {
         _currentAuthToken = await _ssoService.GetAuthTokenAsync(_credentialsOptions.UserName, _credentialsOptions.Password,
             cancellationToken);
-        
+
         var uri = ConstructUri();
         await _webSocket.ConnectAsync(uri, cancellationToken);
-        
+
         _logger.LogDebug("Web socket opened");
 
         _ = Task.Run(() => StartReceivingMessagesAsync(_connectorCancellationTokenSource.Token), cancellationToken);
     }
-    
+
     private Uri ConstructUri()
     {
         var sessionId = Guid.NewGuid().ToString("N");
         var uri =
             $"{SecureWebSocketProtocol}://{_webSocketOptions.Host}:{_webSocketOptions.SslPort}{_webSocketOptions.Uri}/{_serverId}/{sessionId}/websocket";
 
-        _logger.LogDebug("Connecting to: {uri}", uri);
+        _logger.LogDebug("Connecting to: {Uri}", uri);
         ConnectionUri = uri;
         return new Uri(uri);
     }
-    
+
     private static string ConstructServerId()
     {
         var serverId = Random.Shared.Next(0, 999);
 
         return serverId.ToString().PadLeft(3, '0');
     }
-    
+
     public async Task SendAsync(ArraySegment<byte> message, CancellationToken cancellationToken)
     {
         if (_webSocket.State != WebSocketState.Open)
@@ -112,7 +115,7 @@ public class WebSocketConnector : IAsyncDisposable
             return;
         }
 
-        await _webSocket.SendAsync(message, WebSocketMessageType.Text, true, cancellationToken);
+        await _webSocket.SendAsync(message, WebSocketMessageType.Text, endOfMessage: true, cancellationToken);
     }
 
     private async Task StartReceivingMessagesAsync(CancellationToken cancellationToken)
@@ -168,7 +171,7 @@ public class WebSocketConnector : IAsyncDisposable
             message.Dispose();
         }
     }
-    
+
     private async Task HandleReceivedMessageAsync(ReceivedMessage message, CancellationToken cancellationToken)
     {
         try
@@ -227,7 +230,7 @@ public class WebSocketConnector : IAsyncDisposable
             _logger.LogWarning(e, "An error on web socket error callback");
         }
     }
-    
+
     private async Task CloseConnectionAsync(CancellationToken cancellationToken)
     {
         if (!_isConnected)
@@ -262,17 +265,17 @@ public class WebSocketConnector : IAsyncDisposable
         _logger.LogDebug("Sending Disconnect \"1000\"");
         return SendAsync(WebSocketMessages.DisconnectCode, cancellationToken);
     }
-    
+
     private async Task OnWebSocketConnectedAsync()
     {
-        _ = Task.Run(() => PeriodicallyRefreshTokenAsync(_connectorCancellationTokenSource.Token));
-        _ = Task.Run(() => PeriodicallySendHeartBeatMessagesAsync(_connectorCancellationTokenSource.Token));
+        _ = Task.Run(() => PeriodicallyRefreshTokenAsync(_connectorCancellationTokenSource.Token), _connectorCancellationTokenSource.Token);
+        _ = Task.Run(() => PeriodicallySendHeartBeatMessagesAsync(_connectorCancellationTokenSource.Token), _connectorCancellationTokenSource.Token);
 
         try
         {
             if (_connectionEstablishedCallbackAsync is not null)
                 await _connectionEstablishedCallbackAsync.Invoke();
-        
+
             _logger.LogDebug("WebSocket Connection established");
         }
         catch (Exception e)
@@ -280,7 +283,7 @@ public class WebSocketConnector : IAsyncDisposable
             _logger.LogWarning(e, "An error on web socket connected callback");
         }
     }
-    
+
     private async Task PeriodicallyRefreshTokenAsync(CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(_currentAuthToken);
@@ -313,12 +316,9 @@ public class WebSocketConnector : IAsyncDisposable
             OldToken = previousAuthToken,
             Type = CommandType.TOKEN_REFRESH
         };
-        
-        var options = new JsonSerializerOptions();
-        options.Converters.Add(new JsonStringEnumConverter());
 
-        var refreshTokenCommandPayload = JsonSerializer.Serialize(refreshTokenCommand, options);
-        
+        var refreshTokenCommandPayload = JsonSerializer.Serialize(refreshTokenCommand, _jsonSerializerOptions);
+
         var stompFrame = StompMessageFactory.SendFrame(refreshTokenCommandPayload, "/v1/command");
 
         _logger.LogDebug("Sending token refresh frame");
@@ -376,7 +376,7 @@ public class WebSocketConnector : IAsyncDisposable
             _logger.LogWarning(e, "Error on web socket message received callback");
         }
     }
-    
+
     public async ValueTask DisposeAsync()
     {
         if (_isConnected)
@@ -386,5 +386,6 @@ public class WebSocketConnector : IAsyncDisposable
 
         _connectorCancellationTokenSource.Dispose();
         _webSocket.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

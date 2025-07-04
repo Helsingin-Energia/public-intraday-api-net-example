@@ -20,22 +20,22 @@ public class SubscribeRequest
     {
         return new SubscribeRequest(subscriptionId, "delivery_areas", DestinationHelper.ComposeDestination(user, version, PublishingMode.STREAMING, "deliveryAreas"));
     }
-    
+
     public static SubscribeRequest Configuration(string subscriptionId, string user, string version)
     {
         return new SubscribeRequest(subscriptionId, "configuration", DestinationHelper.ComposeDestination(user, version, "configuration"));
     }
-    
+
     public static SubscribeRequest OrderExecutionReports(string subscriptionId, string user, string version, PublishingMode mode)
     {
         return new SubscribeRequest(subscriptionId, "order_execution_report", DestinationHelper.ComposeDestination(user, version, mode, "orderExecutionReport"));
     }
-    
+
     public static SubscribeRequest Contracts(string subscriptionId, string user, string version, PublishingMode mode)
     {
         return new SubscribeRequest(subscriptionId, "contracts", DestinationHelper.ComposeDestination(user, version, mode, "contracts"));
     }
-    
+
     public static SubscribeRequest LocalView(string subscriptionId, string user, string version, PublishingMode mode, int deliveryAreaId)
     {
         return new SubscribeRequest(subscriptionId, "localview", DestinationHelper.ComposeDestination(user, version, mode, $"localview/{deliveryAreaId}"));
@@ -55,7 +55,7 @@ public class SubscribeRequest
     {
         return new SubscribeRequest(subscriptionId, "my_ticker", DestinationHelper.ComposeDestination(user, version, mode, "myTicker"));
     }
-    
+
     public static SubscribeRequest PublicStatistics(string subscriptionId, string user, string version, PublishingMode mode, int deliveryAreaId)
     {
         return new SubscribeRequest(subscriptionId, "public_statistics", DestinationHelper.ComposeDestination(user, version, mode, $"publicStatistics/{deliveryAreaId}"));
@@ -65,16 +65,16 @@ public class SubscribeRequest
     {
         return new SubscribeRequest(subscriptionId, "throttling_limits", DestinationHelper.ComposeDestination(user, version, mode, "throttlingLimits"));
     }
-    
+
     public static SubscribeRequest Capacities(string subscriptionId, string user, string version, PublishingMode mode, int deliveryAreaId, IEnumerable<int> additionalDeliveryAreas)
     {
-        var additionalAreasPart = additionalDeliveryAreas.Any() ? $"/{string.Join("-", additionalDeliveryAreas)}" : string.Empty;
+        var additionalAreasPart = additionalDeliveryAreas.Any() ? $"/{string.Join('-', additionalDeliveryAreas)}" : string.Empty;
         return new SubscribeRequest(subscriptionId, "capacities", DestinationHelper.ComposeDestination(user, version, mode, $"capacities/{deliveryAreaId}{additionalAreasPart}"));
     }
-    
+
     public static SubscribeRequest AtcCapacities(string subscriptionId, string user, string version, PublishingMode mode, int deliveryAreaId, IEnumerable<int> additionalDeliveryAreas)
     {
-        var additionalAreasPart = additionalDeliveryAreas.Any() ? $"/{string.Join("-", additionalDeliveryAreas)}" : string.Empty;
+        var additionalAreasPart = additionalDeliveryAreas.Any() ? $"/{string.Join('-', additionalDeliveryAreas)}" : string.Empty;
         return new SubscribeRequest(subscriptionId, "atcCapacities", DestinationHelper.ComposeDestination(user, version, mode, $"atcCapacities/{deliveryAreaId}{additionalAreasPart}"));
     }
     public static SubscribeRequest HeartBeatPings(string subscriptionId, string user, string version)

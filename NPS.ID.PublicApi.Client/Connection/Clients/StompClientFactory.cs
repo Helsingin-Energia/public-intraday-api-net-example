@@ -14,9 +14,9 @@ public class StompClientFactory
 
     private readonly CredentialsOptions _credentialsOptions;
     private readonly EndpointsOptions _endpointsOptions;
-    
+
     private readonly WebSocketConnectorFactory _webSocketConnectorFactory;
-    
+
     public StompClientFactory(ILoggerFactory loggerFactory,
         IOptions<CredentialsOptions> credentialsOptions,
         IOptions<EndpointsOptions> endpointOptions,
@@ -36,8 +36,8 @@ public class StompClientFactory
             WebSocketClientTarget.MARKET_DATA => _endpointsOptions.MarketData,
             _ => throw new ArgumentOutOfRangeException(nameof(clientTarget))
         };
-        
-        IClient client = new StompClient(
+
+        var client = new StompClient(
             _loggerFactory.CreateLogger<StompClient>(),
             _loggerFactory,
             _webSocketConnectorFactory,

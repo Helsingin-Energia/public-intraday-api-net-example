@@ -20,12 +20,12 @@ public class StompSubscription<TValue> : Subscription, ISubscription<TValue>
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true
     };
-    
+
     private readonly ILogger<StompSubscription<TValue>> _logger;
     private readonly Channel<ReceivedMessage<IReadOnlyCollection<TValue>>> _channel;
 
     public ChannelReader<ReceivedMessage<IReadOnlyCollection<TValue>>> OutputChannel => _channel.Reader;
-    
+
     public StompSubscription(
         string id,
         string type,
@@ -42,7 +42,7 @@ public class StompSubscription<TValue> : Subscription, ISubscription<TValue>
     public override void OnMessage(StompFrame frame, DateTimeOffset timestamp)
     {
         var contentBytes = new ReadOnlySpan<byte>(frame.Content);
-        
+
         try
         {
             var data = JsonSerializer.Deserialize<IReadOnlyCollection<TValue>>(contentBytes, _settings);
@@ -57,12 +57,14 @@ public class StompSubscription<TValue> : Subscription, ISubscription<TValue>
             {
                 return;
             }
-            
+
             _logger.LogWarning("[SubscriptionId:{SubscriptionId}][Destination:{Destination}] Channel for the subscription has reached its maximum capacity", Id, Destination);
-            
+
+#pragma warning disable VSTHRD002
             _channel.Writer.WriteAsync(message).AsTask()
                 .GetAwaiter()
                 .GetResult();
+#pragma warning restore VSTHRD002
         }
         catch (Exception e)
         {

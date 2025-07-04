@@ -11,7 +11,7 @@ public interface IClient
     event EventHandler StompError;
 
     WebSocketClientTarget ClientTarget { get; }
-    
+
     Task<bool> OpenAsync(CancellationToken cancellationToken);
 
     Task<ISubscription<TValue>> SubscribeAsync<TValue>(SubscribeRequest request, CancellationToken cancellationToken);

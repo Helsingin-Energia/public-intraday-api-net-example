@@ -8,7 +8,7 @@ public abstract class Subscription : ISubscription
     public string Type { get; }
     public string Destination { get; }
     public long SequenceNumber { get; set; }
-    
+
     protected Subscription(string id, string type, string destination)
     {
         Id = id;
